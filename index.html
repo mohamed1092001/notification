@@ -63,7 +63,7 @@
       Notification.requestPermission().then(permission => {
         if (permission === "granted") {
           getLocationAndNotify(); // أول إشعار
-          setInterval(getLocationAndNotify, 5 * 60 * 1000); // كل 5 دقايق
+          setInterval(getLocationAndNotify, 5000); // كل 5 دقايق
         } else {
           alert("لازم توافق على الإشعارات");
         }
