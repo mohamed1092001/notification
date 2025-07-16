@@ -2,56 +2,68 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>إشعار باسم القرية من GPS</title>
+  <title>إشعار باسم قريتك</title>
 </head>
 <body>
-  <h1>إشعار كل 5 دقايق باسم قريتك</h1>
+  <h1>إشعار باسم قريتك حسب GPS</h1>
   <button onclick="start()">ابدأ الإشعارات</button>
 
   <script>
-    let villageName = "قريتك";
-
     async function getVillageName(lat, lon) {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14&accept-language=ar`;
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=17&accept-language=ar`;
       const res = await fetch(url);
       const data = await res.json();
-      return data.address.village || data.address.town || data.address.city || "مكان غير معروف";
+
+      const address = data.address;
+
+      // اطبع البيانات في الكونسول للمراجعة
+      console.log("📍 البيانات الكاملة:", address);
+
+      // تفضيل "صهرجت الصغرى" لو ظهرت في أي خانة
+      const allValues = Object.values(address);
+      const containsSaharget = allValues.some(val => val.includes("صهرجت الصغرى"));
+
+      if (containsSaharget) {
+        return "صهرجت الصغرى";
+      }
+
+      // لو مفيش، هات أقرب اسم منطقي
+      return address.village || address.hamlet || address.town || address.suburb || address.city || "مكان غير معروف";
+    }
+
+    function sendNotification(villageName) {
+      new Notification(`📍 ${villageName}`, {
+        body: `موقعك الحالي: ${villageName}`,
+        icon: "https://cdn-icons-png.flaticon.com/512/684/684908.png"
+      });
     }
 
     async function getLocationAndNotify() {
       if (!navigator.geolocation) {
-        alert("المتصفح لا يدعم GPS");
+        alert("المتصفح لا يدعم تحديد الموقع");
         return;
       }
 
       navigator.geolocation.getCurrentPosition(async (position) => {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
-
-        villageName = await getVillageName(lat, lon);
+        const villageName = await getVillageName(lat, lon);
         sendNotification(villageName);
-      }, () => {
-        alert("فشل في الحصول على الموقع");
-      });
-    }
-
-    function sendNotification(villageName) {
-      new Notification(`📍 ${villageName}`, {
-        body: `دي قريتك حسب GPS: ${villageName}`,
-        icon: "https://cdn-icons-png.flaticon.com/512/684/684908.png"
+      }, (err) => {
+        alert("فشل في الحصول على الموقع: " + err.message);
       });
     }
 
     function start() {
       if (!("Notification" in window)) {
-        alert("المتصفح مش بيدعم الإشعارات");
+        alert("المتصفح لا يدعم الإشعارات");
         return;
       }
 
       Notification.requestPermission().then(permission => {
         if (permission === "granted") {
           getLocationAndNotify(); // أول إشعار
-          setInterval(getLocationAndNotify, 5000); // كل 5 دقايق
+          setInterval(getLocationAndNotify, 5 * 60 * 1000); // كل 5 دقايق
         } else {
           alert("لازم توافق على الإشعارات");
         }
