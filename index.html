@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ar">
+
+<head>
+    <meta charset="UTF-8">
+    <title>إشعار باسم القرية</title>
+</head>
+
+<body>
+    <h1>صفحة الإشعار</h1>
+    <p>هتوصلك إشعارات كل 5 دقايق باسم قريتك.</p>
+
+    <script>
+        const villageName = "قرية الدلجمون"; // غيّر الاسم هنا حسب قريتك
+
+        // اطلب إذن الإشعارات أول ما الصفحة تفتح
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                sendNotification();
+                setInterval(sendNotification, 5000); // كل 5 دقايق
+            } else {
+                alert("من فضلك وافق على الإشعارات علشان تشتغل");
+            }
+        });
+
+        function sendNotification() {
+            new Notification(`📍 ${villageName}`, {
+                body: `دي تذكرة بقريتك الجميلة: ${villageName}`,
+                icon: "https://cdn-icons-png.flaticon.com/512/684/684908.png" // أيقونة بسيطة
+            });
+        }
+    </script>
+</body>
+
+</html>
