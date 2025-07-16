@@ -1,35 +1,62 @@
 <!DOCTYPE html>
 <html lang="ar">
-
 <head>
-    <meta charset="UTF-8">
-    <title>إشعار باسم القرية</title>
+  <meta charset="UTF-8">
+  <title>إشعار باسم القرية من GPS</title>
 </head>
-
 <body>
-    <h1>صفحة الإشعار</h1>
-    <p>هتوصلك إشعارات كل 5 دقايق باسم قريتك.</p>
+  <h1>إشعار كل 5 دقايق باسم قريتك</h1>
+  <button onclick="start()">ابدأ الإشعارات</button>
 
-    <script>
-        const villageName = "قرية الدلجمون"; // غيّر الاسم هنا حسب قريتك
+  <script>
+    let villageName = "قريتك";
 
-        // اطلب إذن الإشعارات أول ما الصفحة تفتح
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                sendNotification();
-                setInterval(sendNotification, 5000); // كل 5 دقايق
-            } else {
-                alert("من فضلك وافق على الإشعارات علشان تشتغل");
-            }
-        });
+    async function getVillageName(lat, lon) {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=14&accept-language=ar`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.address.village || data.address.town || data.address.city || "مكان غير معروف";
+    }
 
-        function sendNotification() {
-            new Notification(`📍 ${villageName}`, {
-                body: `دي تذكرة بقريتك الجميلة: ${villageName}`,
-                icon: "https://cdn-icons-png.flaticon.com/512/684/684908.png" // أيقونة بسيطة
-            });
+    async function getLocationAndNotify() {
+      if (!navigator.geolocation) {
+        alert("المتصفح لا يدعم GPS");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        villageName = await getVillageName(lat, lon);
+        sendNotification(villageName);
+      }, () => {
+        alert("فشل في الحصول على الموقع");
+      });
+    }
+
+    function sendNotification(villageName) {
+      new Notification(`📍 ${villageName}`, {
+        body: `دي قريتك حسب GPS: ${villageName}`,
+        icon: "https://cdn-icons-png.flaticon.com/512/684/684908.png"
+      });
+    }
+
+    function start() {
+      if (!("Notification" in window)) {
+        alert("المتصفح مش بيدعم الإشعارات");
+        return;
+      }
+
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          getLocationAndNotify(); // أول إشعار
+          setInterval(getLocationAndNotify, 5000); // كل 5 دقايق
+        } else {
+          alert("لازم توافق على الإشعارات");
         }
-    </script>
+      });
+    }
+  </script>
 </body>
-
 </html>
